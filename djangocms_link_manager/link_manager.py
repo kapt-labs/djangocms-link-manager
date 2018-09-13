@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover
 
 from django.core.validators import URLValidator, EmailValidator
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 import attr
 
@@ -128,7 +129,7 @@ class LinkManager(object):
         btc_address = parts['path']
         return check_bc(btc_address)
 
-    def validate_tel(self, parts, verify_exists=False):
+    def validate_tel(self, phone_number, verify_exists=False):
         """
         Checks if the number is parsable and is a 'possible number'.
         `verify_exists` doesn't attempt to make a call, but checks that the
@@ -138,9 +139,8 @@ class LinkManager(object):
         :param verify_exists:
         :return:
         """
-        phone_number = parts['path']
         try:
-            parsed_num = phonenumbers.parse(phone_number, None)
+            parsed_num = phonenumbers.parse(phone_number, settings.LANGUAGE_CODE.upper())
         except phonenumbers.NumberParseException:
             return False
         else:
