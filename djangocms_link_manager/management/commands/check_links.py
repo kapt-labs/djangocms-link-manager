@@ -91,7 +91,7 @@ class Command(BaseCommand):
             plugin_inst, plugin_class = link_plugin.get_plugin_instance()
             link_manager = self.get_link_manager(plugin_inst.plugin_type, scheme=scheme, netloc=netloc)
 
-            if link_manager and count < 15:
+            if link_manager:
                 link_reports = link_manager.check_link(
                     plugin_inst,
                     verify_exists=verify_exists,
