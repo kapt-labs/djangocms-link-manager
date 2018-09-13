@@ -8,10 +8,12 @@ from django.template.loader import get_template
 from django.utils.lru_cache import lru_cache
 from django.utils.timezone import now
 from django.utils.translation import ugettext as _
+from django.core.urlresolvers import reverse
 
 from django.core.mail import mail_managers
 
 from cms.models import CMSPlugin, NoReverseMatch
+from cms.utils.placeholder import get_placeholder_conf
 
 from ...link_manager_pool import link_manager_pool
 
@@ -34,7 +36,7 @@ class Command(BaseCommand):
             help='Default [host:port] to use for relative URLs (defaults to "localhost:8000").'
         )
         parser.add_argument(
-            '--template', action='store', dest='template', default='djangocms_link_manager/text_only.rst',
+            '--template', action='store', dest='template', default='djangocms_link_manager/text_only.html',
             help='Override the report rendering template.'
         )
         parser.add_argument(
@@ -46,6 +48,14 @@ class Command(BaseCommand):
     @lru_cache(maxsize=100)
     def get_link_manager(self, plugin_type, scheme, netloc):
         return link_manager_pool.get_link_manager(plugin_type)(scheme=scheme, netloc=netloc)
+
+    def handle_placeholder_outside_cms(self, link_plugin):
+        article_set = getattr(link_plugin.placeholder, 'article_set', None)
+        if article_set:
+            article = article_set.first()
+            title = _("News article: {}").format(article.title)
+            url = reverse('news:news_article_by_id', args=[article.id])
+            return title, url
 
     def handle(self, *args, **options):
         """
@@ -81,7 +91,7 @@ class Command(BaseCommand):
             plugin_inst, plugin_class = link_plugin.get_plugin_instance()
             link_manager = self.get_link_manager(plugin_inst.plugin_type, scheme=scheme, netloc=netloc)
 
-            if link_manager:
+            if link_manager and count < 15:
                 link_reports = link_manager.check_link(
                     plugin_inst,
                     verify_exists=verify_exists,
@@ -98,6 +108,7 @@ class Command(BaseCommand):
 
                     if not link_report.valid:
                         slot = link_plugin.placeholder.slot
+                        slot_name = get_placeholder_conf('name', slot)
                         page = getattr(link_plugin.placeholder, 'page', None)
                         if page:
                             try:
@@ -108,14 +119,14 @@ class Command(BaseCommand):
                             except NoReverseMatch:
                                 page_url = ''
                         else:
-                            page_url = ''
+                            page, page_url = self.handle_placeholder_outside_cms(link_plugin)
 
                         bad_link = {
                             'cls': plugin_inst.plugin_type,
                             'page': page,
                             'page_url': page_url,
                             'pk': plugin_inst.pk,
-                            'slot': slot,
+                            'slot': slot_name,
                             'label': link_report.text,
                             'url': link_report.url,
                             'instance': plugin_inst,
