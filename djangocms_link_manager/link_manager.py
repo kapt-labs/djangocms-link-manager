@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import codecs
 import phonenumbers
+import socket
 import warnings
 
 from collections import OrderedDict
@@ -75,7 +76,13 @@ class LinkManager(object):
                     response = urlopen(HeadRequest(url))
                     # NOTE: urllib should have already resolved any 301/302s
                     return 200 <= response.code < 400  # pragma: no cover
-                except (HTTPError, URLError, BadStatusLine, UnicodeEncodeError):
+                except HTTPError:
+                    try:
+                        response = urlopen(url)
+                        return 200 <= response.code < 400  # pragma: no cover
+                    except (HTTPError, URLError, BadStatusLine, UnicodeEncodeError, socket.error):
+                        return False
+                except (URLError, BadStatusLine, UnicodeEncodeError, socket.error):
                     return False
             else:
                 return True
