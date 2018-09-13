@@ -80,7 +80,7 @@ class LinkManager(object):
             else:
                 return True
 
-    def validate_mailto(self, parts, verify_exists=False):
+    def validate_mailto(self, email, verify_exists=False):
         """
         Validates a mailto URL, by using Django's EmailValidator.
         `verify_exists` does nothing at this time.
@@ -91,7 +91,7 @@ class LinkManager(object):
         """
         validator = EmailValidator()
         try:
-            validator(parts['path'])
+            validator(email)
         except ValidationError:
             return False
         else:
