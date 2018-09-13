@@ -1,0 +1,8 @@
+{% extends "djangocms_link_manager/base.html" %}
+{% load i18n %}
+
+{% block link_manager_content %}
+    <h1>{% trans "The analysis is complete" %}</h1>
+    <p>{% trans "You received the report by e-mail." %}</p>
+    <p><a href="{% url 'link-manager:start' %}" class="btn">{% trans "Start a new analysis" %}</a></p>
+{% endblock link_manager_content %}

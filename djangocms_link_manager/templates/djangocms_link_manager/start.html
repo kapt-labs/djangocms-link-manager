@@ -1,0 +1,16 @@
+{% extends "djangocms_link_manager/base.html" %}
+{% load i18n %}
+
+{% block link_manager_content %}
+    <h1>{% trans "Link manager" %}</h1>
+    <p>
+        <a href="{% url 'link-manager:analyze' %}" class="btn btn-start">{% trans "Search for malformed links (quick)" %}</a>
+        <br /><br />
+        <a href="{% url 'link-manager:analyze' %}?verify_exists" class="btn btn-start">{% trans "Search for broken links (long)" %}</a>
+    </p>
+
+    <p>
+        {% trans "The analyze can last for several minutes." %}<br />
+        {% trans "The report will be sent by e-mail to the site's managers." %}
+    </p>
+{% endblock link_manager_content %}
