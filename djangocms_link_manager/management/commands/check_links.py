@@ -109,6 +109,8 @@ class Command(BaseCommand):
                     if not link_report.valid:
                         slot = link_plugin.placeholder.slot
                         slot_name = get_placeholder_conf('name', slot)
+                        if slot_name is None:
+                            slot_name = slot
                         page = getattr(link_plugin.placeholder, 'page', None)
                         if page:
                             try:
