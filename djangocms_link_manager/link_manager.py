@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import codecs
 import phonenumbers
+import requests
 import socket
 import warnings
 
@@ -12,19 +13,15 @@ from hashlib import sha256
 
 try:  # pragma: no cover
     # Python 3.x
-    from http.client import BadStatusLine
     from urllib.parse import urlparse, urlunparse
-    from urllib.request import Request, urlopen
-    from urllib.error import HTTPError, URLError
 except ImportError:  # pragma: no cover
     # Python 2.x
-    from httplib import BadStatusLine
     from urlparse import urlparse, urlunparse
-    from urllib2 import urlopen, Request, HTTPError, URLError
 
-from django.core.validators import URLValidator, EmailValidator
-from django.core.exceptions import ValidationError
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import EmailValidator
+from django.core.validators import URLValidator
 
 import attr
 
@@ -34,11 +31,6 @@ class LinkReport(object):
     valid = attr.ib()
     text = attr.ib()
     url = attr.ib()
-
-
-class HeadRequest(Request):
-    def get_method(self):
-        return 'HEAD'
 
 
 @attr.s(slots=True)
@@ -73,16 +65,24 @@ class LinkManager(object):
         else:
             if verify_exists:
                 try:
-                    response = urlopen(HeadRequest(url))
-                    # NOTE: urllib should have already resolved any 301/302s
-                    return 200 <= response.code < 400  # pragma: no cover
-                except HTTPError:
+                    response = requests.head(url)
+                    if response.status_code == 500:  # Some sites do not handle HEAD requests correctly
+                        raise requests.HTTPError
+                    return 200 <= response.status_code < 400  # pragma: no cover
+                except requests.HTTPError:
                     try:
-                        response = urlopen(url)
-                        return 200 <= response.code < 400  # pragma: no cover
-                    except (HTTPError, URLError, BadStatusLine, UnicodeEncodeError, socket.error):
+                        response = requests.get(url)
+                        return 200 <= response.status_code < 400  # pragma: no cover
+                    except (requests.HTTPError,
+                            requests.ConnectionError,
+                            requests.TooManyRedirects,
+                            UnicodeEncodeError,
+                            socket.error):
                         return False
-                except (URLError, BadStatusLine, UnicodeEncodeError, socket.error):
+                except (requests.ConnectionError,
+                        requests.TooManyRedirects,
+                        UnicodeEncodeError,
+                        socket.error):
                     return False
             else:
                 return True
