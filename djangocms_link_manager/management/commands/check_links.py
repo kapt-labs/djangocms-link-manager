@@ -53,9 +53,13 @@ class Command(BaseCommand):
         article_set = getattr(link_plugin.placeholder, 'article_set', None)
         if article_set:
             article = article_set.first()
-            title = _("News article: {}").format(article.title)
-            url = reverse('news:news_article_by_id', args=[article.id])
-            return title, url
+            if article is not None:
+                title = _("News article: {}").format(article.title)
+                url = reverse('news:news_article_by_id', args=[article.id])
+                return {'title': title, 'url': url}
+
+        # it's probably an orphaned placeholder
+        return None
 
     def handle(self, *args, **options):
         """
@@ -121,7 +125,12 @@ class Command(BaseCommand):
                             except NoReverseMatch:
                                 page_url = ''
                         else:
-                            page, page_url = self.handle_placeholder_outside_cms(link_plugin)
+                            infos = self.handle_placeholder_outside_cms(link_plugin)
+                            if infos is None:
+                                # ignore orphaned placeholders
+                                continue
+                            page = infos['title']
+                            page_url = infos['url']
 
                         bad_link = {
                             'cls': plugin_inst.plugin_type,
