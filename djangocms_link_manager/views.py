@@ -9,7 +9,8 @@ class AnalyzeView(TemplateView):
 
     def get(self, request, *args, **kwargs):
         verify_exists = 'verify_exists' in request.GET
+        host = request.get_host()
 
-        call_command('check_links', verify_exists=verify_exists, mail_managers=True)
+        call_command('check_links', verify_exists=verify_exists, mail_managers=True, host=host)
 
         return super(AnalyzeView, self).get(request, *args, **kwargs)
