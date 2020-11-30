@@ -44,6 +44,10 @@ class Command(BaseCommand):
             help="Instead of printing report to the console, email it to the "
                  "addresses defined in MANAGERS in the project's settings.py."
         )
+        parser.add_argument(
+            '--only-page-with-reverse-id', action='store', dest='only_page', default=None,
+            help="Check only the page with a given reverse id"
+        )
 
     @lru_cache(maxsize=100)
     def get_link_manager(self, plugin_type, scheme, netloc):
@@ -86,6 +90,8 @@ class Command(BaseCommand):
                 Q(placeholder__page__publisher_is_draft=False)
             )
         )
+        if options['only_page'] is not None:
+            link_plugins = link_plugins.filter(placeholder__page__reverse_id=options['only_page'])
         self.stdout.write('Will check {} Plugins'.format(link_plugins.count()))
         count = 0
         for link_plugin in link_plugins.iterator():
