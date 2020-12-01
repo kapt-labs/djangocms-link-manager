@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from django.core.management.base import BaseCommand
 from django.db.models import Q
+from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
 from django.utils.lru_cache import lru_cache
 from django.utils.timezone import now
@@ -13,7 +14,9 @@ from django.core.urlresolvers import reverse
 from django.core.mail import mail_managers
 
 from cms.models import CMSPlugin, NoReverseMatch
+from cms.models.pagemodel import Page
 from cms.utils.placeholder import get_placeholder_conf
+from cms.utils.placeholder import get_placeholders
 
 from ...link_manager_pool import link_manager_pool
 
@@ -66,6 +69,7 @@ class Command(BaseCommand):
         return None
 
     def handle(self, *args, **options):
+        self.stdout.write("Start link check...")
         """
         We're only interested in link plugins that are either not on any page or
         are on a published page.
@@ -80,8 +84,39 @@ class Command(BaseCommand):
         unknown_plugin_classes = []
         count_all_links = 0
 
-        # Check only plugins contained in placeholders which are on a
-        # published page or no page at all (PlaceholderFields).
+        self.stdout.write("Search for placeholders to exclude...")
+        # Find ghosts placeholders ie placeholders created
+        # by a template that is no longer used by a page
+        if options['only_page'] is not None:
+            pages = Page.objects.filter(
+                reverse_id=options["only_page"], publisher_is_draft=False
+            )
+        else:
+            pages = Page.objects.all()
+
+        for page in pages:
+            try:
+                template_placeholders = map(lambda x:x.slot, get_placeholders(page.get_template()))
+            except TemplateDoesNotExist:
+                self.stdout.write(
+                    '** "{}" has template "{}" which could not be found **'.format(
+                        page.get_title(),
+                        page.template,
+                    )
+                )
+
+                continue
+
+            excluded_placeholders = []
+            for placeholder in page.placeholders.all():
+                if not placeholder.slot in template_placeholders:
+                    excluded_placeholders.append(placeholder)
+        self.stdout.write("Done")
+
+        # Check only plugins contained in placeholders which
+        # - are on a published page
+        # - or are on no page at all (PlaceholderFields).
+        # - and are not ghost placeholder
         link_plugins = (
             CMSPlugin.objects
             .filter(plugin_type__in=link_manager_pool.get_link_plugin_types())
@@ -89,9 +124,12 @@ class Command(BaseCommand):
                 Q(placeholder__page__isnull=True) |
                 Q(placeholder__page__publisher_is_draft=False)
             )
+            .exclude(placeholder__in=excluded_placeholders)
         )
+
         if options['only_page'] is not None:
             link_plugins = link_plugins.filter(placeholder__page__reverse_id=options['only_page'])
+
         self.stdout.write('Will check {} Plugins'.format(link_plugins.count()))
         count = 0
         for link_plugin in link_plugins.iterator():
