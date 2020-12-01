@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-09-13 09:51+0200\n"
+"POT-Creation-Date: 2020-12-01 12:21+0100\n"
 "PO-Revision-Date: 2018-09-13 09:56+0200\n"
 "Last-Translator: Adrien Delhorme <ad@kapt.mobi>\n"
 "Language-Team: \n"
@@ -18,99 +18,115 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Poedit 1.8.9\n"
 
-#: djangocms_link_manager/link_managers/cmsplugin_link.py:36
-msgid "No link"
-msgstr "Pas de lien"
+#: link_managers/cmsplugin_link.py:40
+msgid "Invalid link (no URL) but with children plugins"
+msgstr "Lien non valide (pas d’URL) mais avec des plugins enfants"
 
-#: djangocms_link_manager/management/commands/check_links.py:54
+#: link_managers/cmsplugin_link.py:43
+msgid "Invalid link (no URL)"
+msgstr "Lien non valide (pas d’URL)"
+
+#: link_managers/cmsplugin_link.py:47
+msgid "Link without label"
+msgstr "Lien sans intitulé"
+
+#: management/commands/check_links.py:76
 msgid "News article: {}"
-msgstr "Article d'actualité : {}"
+msgstr "Article d’actualité : {}"
 
-#: djangocms_link_manager/management/commands/check_links.py:151
+#: management/commands/check_links.py:231
 #, python-brace-format
 msgid "Broken link report: {0}"
 msgstr "Rapport de lien cassé : {0}"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/end.html:5
+#: templates/djangocms_link_manager/end.html:5
 msgid "The analysis is complete"
 msgstr "L’analyse est terminée"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/end.html:6
+#: templates/djangocms_link_manager/end.html:8
 msgid "You received the report by e-mail."
 msgstr "Vous avez reçu le rapport par courrier électronique."
 
-#: djangocms_link_manager/templates/djangocms_link_manager/end.html:7
+#: templates/djangocms_link_manager/end.html:9
+#: templates/djangocms_link_manager/end.html:14
 msgid "Start a new analysis"
 msgstr "Commencer une nouvelle analyse"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/start.html:5
+#: templates/djangocms_link_manager/start.html:5
 msgid "Link manager"
 msgstr "Gestionnaire de Liens"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/start.html:7
-msgid "Search for malformed links (quick)"
-msgstr "Rechercher des liens mal formés (rapide)"
+#: templates/djangocms_link_manager/start.html:8
+msgid "Search for broken links in this page only (quick)"
+msgstr "Recherche de liens cassés dans cette page uniquement (rapide)"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/start.html:9
-msgid "Search for broken links (long)"
-msgstr "Recherche de liens cassés (long)"
+#: templates/djangocms_link_manager/start.html:11
+msgid "Search for malformed links in all pages (quick)"
+msgstr "Rechercher des liens mal formés dans toutes les pages (rapide)"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/start.html:13
+#: templates/djangocms_link_manager/start.html:14
+msgid "Search for broken links in all pages (long)"
+msgstr "Recherche de liens cassés dans toutes les pages (long)"
+
+#: templates/djangocms_link_manager/start.html:18
 msgid "The analyze can last for several minutes."
 msgstr "L’analyse peut durer plusieurs minutes."
 
-#: djangocms_link_manager/templates/djangocms_link_manager/start.html:14
+#: templates/djangocms_link_manager/start.html:19
 msgid "The report will be sent by e-mail to the site's managers."
 msgstr "Le rapport sera envoyé par e-mail aux responsables du site."
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:5
+#: templates/djangocms_link_manager/text_only.html:5
 msgid "Broken Link Report"
 msgstr "Rapport de lien cassé"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:8
+#: templates/djangocms_link_manager/text_only.html:8
 #, python-format
 msgid "Report generated %(timestamp)s"
 msgstr "Rapport généré le %(timestamp)s"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:9
+#: templates/djangocms_link_manager/text_only.html:9
 msgid "disabled"
 msgstr "désactivé"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:10
+#: templates/djangocms_link_manager/text_only.html:10
 #, python-format
 msgid "Default scheme: %(scheme)s"
 msgstr "Schéma par défaut : %(scheme)s"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:11
+#: templates/djangocms_link_manager/text_only.html:11
 #, python-format
 msgid "Default host/port: %(netloc)s"
 msgstr "Hôte/port par défaut : %(netloc)s"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:14
+#: templates/djangocms_link_manager/text_only.html:14
 msgid "Broken Links"
 msgstr "Liens cassés"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:17
+#: templates/djangocms_link_manager/text_only.html:17
 #, python-format
 msgid "The following %(num)s/%(total)s plugins appear broken."
 msgstr "%(num)s plugins, sur %(total)s au total, semblent cassés."
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:21
+#: templates/djangocms_link_manager/text_only.html:21
 msgid "No bad links found."
 msgstr "Pas de liens cassés trouvés."
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:26
+#: templates/djangocms_link_manager/text_only.html:26
 msgid "Un-managed link plugins"
 msgstr "Plugins lien non gérés"
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:29
+#: templates/djangocms_link_manager/text_only.html:29
 msgid "The following plugin types do not have a registered link manager."
 msgstr "Les types de plugin suivants n’ont pas de gestionnaire de liens."
 
-#: djangocms_link_manager/templates/djangocms_link_manager/text_only.html:34
+#: templates/djangocms_link_manager/text_only.html:34
 msgid "End of report"
 msgstr "Fin de rapport"
 
-#: djangocms_link_manager/urls.py:16
+#: urls.py:16
 msgid "^analyze/$"
 msgstr "^analyse/$"
+
+#~ msgid "No link"
+#~ msgstr "Pas de lien"
