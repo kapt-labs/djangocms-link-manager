@@ -9,6 +9,8 @@ from django.template.loader import get_template
 from django.utils.lru_cache import lru_cache
 from django.utils.timezone import now
 from django.utils.translation import ugettext as _
+from django.utils.translation import get_language
+from django.utils.translation import activate
 from django.core.urlresolvers import reverse
 
 from django.core.mail import mail_managers
@@ -20,6 +22,8 @@ from cms.utils.placeholder import get_placeholders
 
 from ...link_manager_pool import link_manager_pool
 
+
+LANGUAGE_CODE = get_language()
 
 class Command(BaseCommand):
     help = """Generate link report."""
@@ -61,6 +65,7 @@ class Command(BaseCommand):
         if article_set:
             article = article_set.first()
             if article is not None:
+                activate(LANGUAGE_CODE)
                 title = _("News article: {}").format(article.title)
                 url = reverse('news:news_article_by_id', args=[article.id])
                 return {'title': title, 'url': url}
