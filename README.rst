@@ -56,6 +56,12 @@ However, this command accepts a number of optional arguments: ::
     --mail-managers     Instead of printing report to the console, email it to
                         the addresses defined in the MANAGERS list in the
                         project's settings.py.
+    --only-page-with-reverse-id ONLY_PAGE_REVERSE_ID
+                        Check only the page with a given reverse id
+    --only-page-with-id ONLY_PAGE_ID
+                        Check only the page with a given id
+    --only-placeholder-id ONLY_PLACEHOLDER_ID
+                        Check only the placeholder with a given id
 
 
 ---------
@@ -126,3 +132,23 @@ actually attempt to fetch the URL (using an HTTP HEAD request) and will return
 
 For more information about these elements, please review the docs for
 `urllib.parse <https://docs.python.org/3/library/urllib.html>`_.
+
+Add in a CMS toolbar
+--------------------
+
+Add `cms_toolbars.py` file in your project, containing::
+
+    from cms.toolbar_base import CMSToolbar
+    from cms.toolbar_pool import toolbar_pool
+    from django.core.urlresolvers import reverse
+    from django.utils.translation import ugettext_lazy as _
+
+    @toolbar_pool.register
+    class SettingsToolbar(CMSToolbar):
+        def populate(self):
+            link_manager_url = reverse('link-manager:start')
+            current_page = self.request.current_page
+            if current_page is not None:
+                link_manager_url += "?page_id={}".format(current_page.id)
+
+            self.toolbar.add_modal_item(_('Broken link analysis'), url=link_manager_url, on_close=None)
