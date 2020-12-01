@@ -6,6 +6,7 @@ import codecs
 import phonenumbers
 import requests
 import socket
+import time
 import warnings
 
 from collections import OrderedDict
@@ -66,12 +67,16 @@ class LinkManager(object):
             if verify_exists:
                 try:
                     response = requests.head(url)
-                    if response.status_code == 500:  # Some sites do not handle HEAD requests correctly
+                    if 400 <= response.status_code <= 500:  # Some sites do not handle HEAD requests correctly
                         raise requests.HTTPError
                     return 200 <= response.status_code < 400  # pragma: no cover
                 except requests.HTTPError:
                     try:
-                        response = requests.get(url)
+                        time.sleep(0.5) # Some sites prevent request being made too quickly
+                        response = requests.get(url, headers={
+                            # Some site check for a common User Agent
+                            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:83.0) Gecko/20100101 Firefox/83.0"
+                        })
                         return 200 <= response.status_code < 400  # pragma: no cover
                     except (requests.HTTPError,
                             requests.ConnectionError,
