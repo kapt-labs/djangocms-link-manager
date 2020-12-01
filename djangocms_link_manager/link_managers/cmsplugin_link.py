@@ -32,11 +32,24 @@ class CMSPluginLinkLinkManager(LinkManager):
             url = instance.phone
             valid = self.validate_tel(url, verify_exists=verify_exists)
 
+        elif instance.file_link is not None:
+            url = instance.file_link.url
+            valid = self.validate_url(url, verify_exists=verify_exists)
+
+        elif instance.get_children() > 0:
+            url = _('Invalid link (no URL) but with children plugins')
+
         else:
-            url = _('No link')
+            url = _('Invalid link (no URL)')
+
+
+        if instance.name == "":
+            name = _("Link without label")
+        else:
+            name = instance.name
 
         return LinkReport(
             valid=valid,
-            text=instance.name,
+            text=name,
             url=url,
         )
