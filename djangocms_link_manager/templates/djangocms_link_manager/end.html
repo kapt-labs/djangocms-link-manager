@@ -3,6 +3,14 @@
 
 {% block link_manager_content %}
     <h1>{% trans "The analysis is complete" %}</h1>
-    <p>{% trans "You received the report by e-mail." %}</p>
-    <p><a href="{% url 'link-manager:start' %}" class="btn">{% trans "Start a new analysis" %}</a></p>
+
+    {% if is_mail_managers %}
+        <p>{% trans "You received the report by e-mail." %}</p>
+        <p><a href="{% url 'link-manager:start' %}" class="btn">{% trans "Start a new analysis" %}</a></p>
+    {% else %}
+        <pre>
+            {{ output|linebreaks }}
+        </pre> 
+        <p><a href="{% url 'link-manager:start' %}{% if page_id %}?page_id={{ page_id }}{% endif %}" class="btn">{% trans "Start a new analysis" %}</a></p>
+    {% endif %}
 {% endblock link_manager_content %}

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import unicode_literals
 
 from django.core.management.base import BaseCommand
@@ -52,8 +51,16 @@ class Command(BaseCommand):
                  "addresses defined in MANAGERS in the project's settings.py."
         )
         parser.add_argument(
-            '--only-page-with-reverse-id', action='store', dest='only_page', default=None,
+            '--only-page-with-reverse-id', action='store', dest='only_page_reverse_id', default=None,
             help="Check only the page with a given reverse id"
+        )
+        parser.add_argument(
+            '--only-page-with-id', action='store', dest='only_page_id', default=None,
+            help="Check only the page with a given id"
+        )
+        parser.add_argument(
+            '--only-placeholder-id', action='store', dest='only_placeholder_id', default=None,
+            help="Check only the placeholder with a given id"
         )
 
     @lru_cache(maxsize=100)
@@ -75,6 +82,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write("Start link check...")
+       
         """
         We're only interested in link plugins that are either not on any page or
         are on a published page.
@@ -89,51 +97,60 @@ class Command(BaseCommand):
         unknown_plugin_classes = []
         count_all_links = 0
 
-        self.stdout.write("Search for placeholders to exclude...")
-        # Find ghosts placeholders ie placeholders created
-        # by a template that is no longer used by a page
-        if options['only_page'] is not None:
+        if options['only_page_reverse_id'] is not None:
             pages = Page.objects.filter(
-                reverse_id=options["only_page"], publisher_is_draft=False
+                reverse_id=options["only_page_reverse_id"], publisher_is_draft=False
             )
+            self.stdout.write("Check only page: {}".format(pages.first().get_title(LANGUAGE_CODE)))
+        elif options['only_page_id'] is not None:
+            pages = Page.objects.filter(
+                id=options["only_page_id"]
+            )
+            self.stdout.write("Check only page: {}".format(pages.first().get_title(LANGUAGE_CODE)))
         else:
             pages = Page.objects.all()
 
-        for page in pages:
-            try:
-                template_placeholders = map(lambda x:x.slot, get_placeholders(page.get_template()))
-            except TemplateDoesNotExist:
-                self.stdout.write(
-                    '** "{}" has template "{}" which could not be found **'.format(
-                        page.get_title(),
-                        page.template,
+        excluded_placeholders = []
+        if options['only_placeholder_id'] is None:
+            self.stdout.write("Search for placeholders to exclude...")
+            # Find ghosts placeholders ie placeholders created
+            # by a template that is no longer used by a page
+
+            for page in pages:
+                try:
+                    template_placeholders = map(lambda x:x.slot, get_placeholders(page.get_template()))
+                except TemplateDoesNotExist:
+                    self.stdout.write(
+                        '** "{}" has template "{}" which could not be found **'.format(
+                            page.get_title(),
+                            page.template,
+                        )
                     )
-                )
+                    continue
 
-                continue
+                for placeholder in page.placeholders.all():
+                    if not placeholder.slot in template_placeholders:
+                        excluded_placeholders.append(placeholder)
+            self.stdout.write("Done")
 
-            excluded_placeholders = []
-            for placeholder in page.placeholders.all():
-                if not placeholder.slot in template_placeholders:
-                    excluded_placeholders.append(placeholder)
-        self.stdout.write("Done")
-
-        # Check only plugins contained in placeholders which
-        # - are on a published page
-        # - or are on no page at all (PlaceholderFields).
-        # - and are not ghost placeholder
-        link_plugins = (
-            CMSPlugin.objects
-            .filter(plugin_type__in=link_manager_pool.get_link_plugin_types())
-            .filter(
+        link_plugins = CMSPlugin.objects.filter(plugin_type__in=link_manager_pool.get_link_plugin_types())
+        
+        if options['only_page_reverse_id'] is not None:
+            link_plugins = link_plugins.filter(placeholder__page__reverse_id=options['only_page_reverse_id'])
+        elif options['only_page_id'] is not None:
+            link_plugins = link_plugins.filter(placeholder__page__id=options['only_page_id'])
+        elif options['only_placeholder_id'] is not None:
+            link_plugins = link_plugins.filter(placeholder__id=options['only_placeholder_id'])
+        else:
+            # Check only plugins contained in placeholders which
+            # - are on a published page
+            # - or are on no page at all (PlaceholderFields).
+            # - and are not ghost placeholder
+            link_plugins = link_plugins.filter(
                 Q(placeholder__page__isnull=True) |
                 Q(placeholder__page__publisher_is_draft=False)
-            )
-            .exclude(placeholder__in=excluded_placeholders)
-        )
+            ).exclude(placeholder__in=excluded_placeholders)
 
-        if options['only_page'] is not None:
-            link_plugins = link_plugins.filter(placeholder__page__reverse_id=options['only_page'])
 
         self.stdout.write('Will check {} Plugins'.format(link_plugins.count()))
         count = 0

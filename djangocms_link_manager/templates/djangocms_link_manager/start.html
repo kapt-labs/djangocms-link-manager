@@ -4,9 +4,14 @@
 {% block link_manager_content %}
     <h1>{% trans "Link manager" %}</h1>
     <p>
-        <a href="{% url 'link-manager:analyze' %}" class="btn btn-start">{% trans "Search for malformed links (quick)" %}</a>
+        {% if request.GET.page_id %}
+            <a href="{% url 'link-manager:analyze' %}?verify_exists&page_id={{ request.GET.page_id }}" class="btn btn-start">{% trans "Search for broken links in this page only (quick)" %}</a>
+            <br /><br />
+        {% endif %}
+        <a href="{% url 'link-manager:analyze' %}" class="btn btn-start">{% trans "Search for malformed links in all pages (quick)" %}</a>
+      
         <br /><br />
-        <a href="{% url 'link-manager:analyze' %}?verify_exists" class="btn btn-start">{% trans "Search for broken links (long)" %}</a>
+        <a href="{% url 'link-manager:analyze' %}?verify_exists" class="btn btn-start">{% trans "Search for broken links in all pages (long)" %}</a>
     </p>
 
     <p>
