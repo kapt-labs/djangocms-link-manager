@@ -10,7 +10,7 @@ from django.utils.timezone import now
 from django.utils.translation import ugettext as _
 from django.utils.translation import get_language
 from django.utils.translation import activate
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from django.core.mail import mail_managers
 
