@@ -82,7 +82,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write("Start link check...")
-       
+
         """
         We're only interested in link plugins that are either not on any page or
         are on a published page.
@@ -110,15 +110,21 @@ class Command(BaseCommand):
         else:
             pages = Page.objects.all()
 
-        excluded_placeholders = []
         if options['only_placeholder_id'] is None:
             self.stdout.write("Search for placeholders to exclude...")
             # Find ghosts placeholders ie placeholders created
             # by a template that is no longer used by a page
 
+            excluded_placeholders = []
+
+            if options['only_page_reverse_id'] is not None:
+                pages = pages.filter(reverse_id=options['only_page_reverse_id'])
+            elif options['only_page_id'] is not None:
+                pages = pages.filter(id=options['only_page_id'])
+
             for page in pages:
                 try:
-                    template_placeholders = map(lambda x:x.slot, get_placeholders(page.get_template()))
+                    template_placeholders = list(map(lambda x:x.slot, get_placeholders(page.get_template())))
                 except TemplateDoesNotExist:
                     self.stdout.write(
                         '** "{}" has template "{}" which could not be found **'.format(
@@ -131,16 +137,24 @@ class Command(BaseCommand):
                 for placeholder in page.placeholders.all():
                     if not placeholder.slot in template_placeholders:
                         excluded_placeholders.append(placeholder)
-            self.stdout.write("Done")
+            self.stdout.write("Found {} placeholders to exclude".format(len(excluded_placeholders)))
 
         link_plugins = CMSPlugin.objects.filter(plugin_type__in=link_manager_pool.get_link_plugin_types())
-        
+
         if options['only_page_reverse_id'] is not None:
-            link_plugins = link_plugins.filter(placeholder__page__reverse_id=options['only_page_reverse_id'])
+            link_plugins = link_plugins.filter(
+                placeholder__page__reverse_id=options['only_page_reverse_id']
+            ).exclude(placeholder__in=excluded_placeholders)
+
         elif options['only_page_id'] is not None:
-            link_plugins = link_plugins.filter(placeholder__page__id=options['only_page_id'])
+            link_plugins = link_plugins.filter(
+                placeholder__page__id=options['only_page_id']
+            ).exclude(placeholder__in=excluded_placeholders)
+
         elif options['only_placeholder_id'] is not None:
-            link_plugins = link_plugins.filter(placeholder__id=options['only_placeholder_id'])
+            link_plugins = link_plugins.filter(
+                placeholder__id=options['only_placeholder_id']
+            )
         else:
             # Check only plugins contained in placeholders which
             # - are on a published page
@@ -185,7 +199,7 @@ class Command(BaseCommand):
                         if page:
                             try:
                                 page_url = 'https://{}{}'.format(
-                                    page.site.domain,
+                                    page.node.site.domain,
                                     page.get_absolute_url(plugin_inst.language),
                                 )
                             except NoReverseMatch:
