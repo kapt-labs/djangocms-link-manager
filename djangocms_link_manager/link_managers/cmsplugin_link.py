@@ -20,15 +20,15 @@ class CMSPluginLinkLinkManager(LinkManager):
             else:
                 valid = True
 
-        elif instance.external_link is not '':
+        elif instance.external_link != '':
             url = instance.external_link
             valid = self.validate_url(url, verify_exists=verify_exists)
 
-        elif instance.mailto is not '':
+        elif instance.mailto != '':
             url = instance.mailto
             valid = self.validate_mailto(url, verify_exists=verify_exists)
 
-        elif instance.phone is not '':
+        elif instance.phone != '':
             url = instance.phone
             valid = self.validate_tel(url, verify_exists=verify_exists)
 
@@ -36,7 +36,7 @@ class CMSPluginLinkLinkManager(LinkManager):
             url = instance.file_link.url
             valid = self.validate_url(url, verify_exists=verify_exists)
 
-        elif instance.get_children() > 0:
+        elif instance.get_children().count() > 0:
             url = _('Invalid link (no URL) but with children plugins')
 
         else:
