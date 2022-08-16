@@ -25,6 +25,7 @@ from django.core.validators import EmailValidator
 from django.core.validators import URLValidator
 
 import attr
+from .conf import settings as local_settings
 
 
 @attr.s(slots=True)
@@ -39,8 +40,61 @@ class LinkManager(object):
     """
     Defines an interface for the link manager.
     """
-    scheme = attr.ib(default='http')
-    netloc = attr.ib(default='localhost:8000')
+
+    scheme = attr.ib(default="http")
+    netloc = attr.ib(default="localhost:8000")
+
+    def verify_link_exists(self, url, redirection_count=0):
+        try:
+            response = requests.head(url)
+            if (
+                400 <= response.status_code <= 500
+            ):  # Some sites do not handle HEAD requests correctly
+                raise requests.HTTPError
+            elif response.status_code in [301, 302]:
+                redirection_count += 1
+                if redirection_count < local_settings.MAX_REDIRECT:
+                    self.verify_link_exists(response.next.url, redirection_count)
+                else:
+                    # Links with redirects > MAX_REDIRECT are considered broken
+                    return False
+            else:
+                return 200 <= response.status_code < 400  # pragma: no cover
+        
+        except requests.HTTPError:
+            try:
+                time.sleep(0.5)  # Some sites prevent request being made too quickly
+                response = requests.get(
+                    url,
+                    headers={
+                        # Some site check for a common User Agent
+                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:83.0) Gecko/20100101 Firefox/83.0"
+                    },
+                )
+                if response.status_code in [301, 302]:
+                    redirection_count += 1
+                    if redirection_count < local_settings.MAX_REDIRECT:
+                        self.verify_link_exists(response.next.url, redirection_count)
+                    else:
+                        # Links with redirects > MAX_REDIRECT are considered broken
+                        return False
+                else:
+                    return 200 <= response.status_code < 400  # pragma: no cover
+            except (
+                requests.HTTPError,
+                requests.ConnectionError,
+                requests.TooManyRedirects,
+                UnicodeEncodeError,
+                socket.error,
+            ):
+                return False
+        except (
+            requests.ConnectionError,
+            requests.TooManyRedirects,
+            UnicodeEncodeError,
+            socket.error,
+        ):
+            return False
 
     def validate_default(self, parts, verify_exists=False):
         """
@@ -54,10 +108,10 @@ class LinkManager(object):
         :return:
         """
         validator = URLValidator()
-        if not parts['netloc']:
+        if not parts["netloc"]:
             # If there is no host/port, then this may be a link to a local
             # resource (media or static asset, etc.) Use the provided default.
-            parts['netloc'] = self.netloc
+            parts["netloc"] = self.netloc
         url = urlunparse(parts.values())
         try:
             validator(url)
@@ -65,30 +119,7 @@ class LinkManager(object):
             return False
         else:
             if verify_exists:
-                try:
-                    response = requests.head(url)
-                    if 400 <= response.status_code <= 500:  # Some sites do not handle HEAD requests correctly
-                        raise requests.HTTPError
-                    return 200 <= response.status_code < 400  # pragma: no cover
-                except requests.HTTPError:
-                    try:
-                        time.sleep(0.5) # Some sites prevent request being made too quickly
-                        response = requests.get(url, headers={
-                            # Some site check for a common User Agent
-                            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:83.0) Gecko/20100101 Firefox/83.0"
-                        })
-                        return 200 <= response.status_code < 400  # pragma: no cover
-                    except (requests.HTTPError,
-                            requests.ConnectionError,
-                            requests.TooManyRedirects,
-                            UnicodeEncodeError,
-                            socket.error):
-                        return False
-                except (requests.ConnectionError,
-                        requests.TooManyRedirects,
-                        UnicodeEncodeError,
-                        socket.error):
-                    return False
+                return self.verify_link_exists(url)
             else:
                 return True
 
@@ -120,12 +151,12 @@ class LinkManager(object):
         """
         # Code borrowed from:
         # https://rosettacode.org/wiki/Bitcoin/address_validation#Python
-        digits58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+        digits58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
         def to_bytes(n, length):
-            s = '%x' % n
-            s = s.rjust(length * 2, '0')
-            s = codecs.decode(s.encode("UTF-8"), 'hex_codec')
+            s = "%x" % n
+            s = s.rjust(length * 2, "0")
+            s = codecs.decode(s.encode("UTF-8"), "hex_codec")
             return s
 
         def decode_base58(bc, length):
@@ -138,7 +169,7 @@ class LinkManager(object):
             bcbytes = decode_base58(bc, 25)
             return bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4]
 
-        btc_address = parts['path']
+        btc_address = parts["path"]
         return check_bc(btc_address)
 
     def validate_tel(self, phone_number, verify_exists=False):
@@ -152,7 +183,9 @@ class LinkManager(object):
         :return:
         """
         try:
-            parsed_num = phonenumbers.parse(phone_number, settings.LANGUAGE_CODE.upper())
+            parsed_num = phonenumbers.parse(
+                phone_number, settings.LANGUAGE_CODE.upper()
+            )
         except phonenumbers.NumberParseException:
             return False
         else:
@@ -177,23 +210,25 @@ class LinkManager(object):
             # `None`, etc.
             return False
 
-        parts = OrderedDict(zip(
-            ['scheme', 'netloc', 'path', 'params', 'query', 'fragment'],
-            urlparse(url)
-        ))
+        parts = OrderedDict(
+            zip(
+                ["scheme", "netloc", "path", "params", "query", "fragment"],
+                urlparse(url),
+            )
+        )
 
-        if not parts['scheme']:
+        if not parts["scheme"]:
             # Sometimes users enter urls without the scheme (intentionally or
             # otherwise). These are valid in browsers, but possibly not for our
             # validator, so we'll use the provided default.
-            parts['scheme'] = self.scheme
+            parts["scheme"] = self.scheme
 
-        scheme = parts['scheme']
-        if scheme in ['http', 'https', 'ftp', 'ftps']:
+        scheme = parts["scheme"]
+        if scheme in ["http", "https", "ftp", "ftps"]:
             return self.validate_default(parts, verify_exists=verify_exists)
 
-        elif scheme != 'url' and hasattr(self, 'validate_' + scheme):
-            validator = getattr(self, 'validate_' + scheme)
+        elif scheme != "url" and hasattr(self, "validate_" + scheme):
+            validator = getattr(self, "validate_" + scheme)
             return validator(parts, verify_exists=verify_exists)
         else:
             warnings.warn('Validator not found for scheme: "{0}".'.format(scheme))
@@ -208,4 +243,4 @@ class LinkManager(object):
         :param verify_exists:
         :return: LinkReport
         """
-        raise NotImplementedError('Must be implemented in sub-class.')
+        raise NotImplementedError("Must be implemented in sub-class.")

@@ -8,3 +8,5 @@ def default_handler(plugin):
     return
 
 PLACEHOLDER_OUTSIDE_CMS_HANDLER = getattr(settings, "LINK_MANAGER_PLACEHOLDER_OUTSIDE_CMS_HANDLER", default_handler)
+
+MAX_REDIRECT = getattr(settings, "LINK_MANAGER_MAX_REDIRECT", 3)
