@@ -19,6 +19,7 @@ from cms.models.pagemodel import Page
 from cms.utils.placeholder import get_placeholder_conf
 from cms.utils.placeholder import get_placeholders
 
+from ...conf import settings
 from ...link_manager_pool import link_manager_pool
 
 
@@ -67,18 +68,8 @@ class Command(BaseCommand):
     def get_link_manager(self, plugin_type, scheme, netloc):
         return link_manager_pool.get_link_manager(plugin_type)(scheme=scheme, netloc=netloc)
 
-    def handle_placeholder_outside_cms(self, link_plugin):
-        article_set = getattr(link_plugin.placeholder, 'article_set', None)
-        if article_set:
-            article = article_set.first()
-            if article is not None:
-                activate(LANGUAGE_CODE)
-                title = _("News article: {}").format(article.title)
-                url = reverse('news:news_article_by_id', args=[article.id])
-                return {'title': title, 'url': url}
-
-        # it's probably an orphaned placeholder
-        return None
+    def handle_placeholder_outside_cms(self, plugin):
+        return settings.PLACEHOLDER_OUTSIDE_CMS_HANDLER(plugin)
 
     def handle(self, *args, **options):
         self.stdout.write("Start link check...")
