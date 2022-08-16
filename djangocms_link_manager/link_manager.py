@@ -54,7 +54,7 @@ class LinkManager(object):
             elif response.status_code in [301, 302]:
                 redirection_count += 1
                 if redirection_count < local_settings.MAX_REDIRECT:
-                    self.verify_link_exists(response.next.url, redirection_count)
+                    return self.verify_link_exists(response.next.url, redirection_count)
                 else:
                     # Links with redirects > MAX_REDIRECT are considered broken
                     return False
