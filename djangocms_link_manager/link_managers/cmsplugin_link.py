@@ -35,6 +35,9 @@ class CMSPluginLinkLinkManager(LinkManager):
         elif instance.file_link is not None:
             url = instance.file_link.url
             valid = self.validate_url(url, verify_exists=verify_exists)
+        
+        elif instance.anchor is not None:
+            valid = True
 
         elif instance.get_children().count() > 0:
             url = _('Invalid link (no URL) but with children plugins')
