@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
-from django.utils.lru_cache import lru_cache
+from functools import lru_cache
 from django.utils.timezone import now
 from django.utils.translation import ugettext as _
 from django.utils.translation import get_language
