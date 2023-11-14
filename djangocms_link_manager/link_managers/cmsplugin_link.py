@@ -37,6 +37,7 @@ class CMSPluginLinkLinkManager(LinkManager):
             valid = self.validate_url(url, verify_exists=verify_exists)
         
         elif instance.anchor is not None:
+            url = "#" + instance.anchor
             valid = True
 
         elif instance.get_children().count() > 0:
