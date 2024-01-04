@@ -164,62 +164,62 @@ class Command(BaseCommand):
             if not (count % 1000):
                 self.stdout.write('  Checked {} plugins...'.format(count))
             plugin_inst, plugin_class = link_plugin.get_plugin_instance()
-            link_manager = self.get_link_manager(plugin_inst.plugin_type, scheme=scheme, netloc=netloc)
-
-            if link_manager:
-                link_reports = link_manager.check_link(
-                    plugin_inst,
-                    verify_exists=verify_exists,
-                )
-                # Convert to a list if only a single item was returned.
-                try:
-                    iter(link_reports)
-                except TypeError:
-                    # Result is not a list
-                    link_reports = [link_reports]
-
-                for link_report in link_reports:
-                    count_all_links += 1
-
-                    if not link_report.valid:
-                        slot = link_plugin.placeholder.slot
-                        slot_name = get_placeholder_conf('name', slot)
-                        if slot_name is None:
-                            slot_name = slot
-                        page = getattr(link_plugin.placeholder, 'page', None)
-                        if page:
-                            try:
-                                page_url = 'https://{}{}'.format(
-                                    page.node.site.domain,
-                                    page.get_absolute_url(plugin_inst.language),
-                                )
-                            except NoReverseMatch:
-                                page_url = ''
-                        else:
-                            infos = self.handle_placeholder_outside_cms(link_plugin)
-                            if infos is None:
-                                # ignore orphaned placeholders
-                                continue
-                            page = infos['title']
-                            page_url = infos['url']
-
-                        bad_link = {
-                            'cls': plugin_inst.plugin_type,
-                            'page': page,
-                            'page_url': page_url,
-                            'pk': plugin_inst.pk,
-                            'slot': slot_name,
-                            'label': link_report.text,
-                            'url': link_report.url,
-                            'instance': plugin_inst,
-                        }
-                        self.stdout.write(
-                            'Broken link "{url}" on "{page_url}" plugin.id:{pk} placeholder:{slot}'.format(**bad_link)
-                        )
-                        bad_links.append(bad_link)
-            else:
-                if plugin_inst.plugin_type not in unknown_plugin_classes:
-                    unknown_plugin_classes.append(plugin_inst.plugin_type)
+            if plugin_inst:
+                link_manager = self.get_link_manager(plugin_inst.plugin_type, scheme=scheme, netloc=netloc)
+                if link_manager:
+                    link_reports = link_manager.check_link(
+                        plugin_inst,
+                        verify_exists=verify_exists,
+                    )
+                    # Convert to a list if only a single item was returned.
+                    try:
+                        iter(link_reports)
+                    except TypeError:
+                        # Result is not a list
+                        link_reports = [link_reports]
+    
+                    for link_report in link_reports:
+                        count_all_links += 1
+    
+                        if not link_report.valid:
+                            slot = link_plugin.placeholder.slot
+                            slot_name = get_placeholder_conf('name', slot)
+                            if slot_name is None:
+                                slot_name = slot
+                            page = getattr(link_plugin.placeholder, 'page', None)
+                            if page:
+                                try:
+                                    page_url = 'https://{}{}'.format(
+                                        page.node.site.domain,
+                                        page.get_absolute_url(plugin_inst.language),
+                                    )
+                                except NoReverseMatch:
+                                    page_url = ''
+                            else:
+                                infos = self.handle_placeholder_outside_cms(link_plugin)
+                                if infos is None:
+                                    # ignore orphaned placeholders
+                                    continue
+                                page = infos['title']
+                                page_url = infos['url']
+    
+                            bad_link = {
+                                'cls': plugin_inst.plugin_type,
+                                'page': page,
+                                'page_url': page_url,
+                                'pk': plugin_inst.pk,
+                                'slot': slot_name,
+                                'label': link_report.text,
+                                'url': link_report.url,
+                                'instance': plugin_inst,
+                            }
+                            self.stdout.write(
+                                'Broken link "{url}" on "{page_url}" plugin.id:{pk} placeholder:{slot}'.format(**bad_link)
+                            )
+                            bad_links.append(bad_link)
+                else:
+                    if plugin_inst.plugin_type not in unknown_plugin_classes:
+                        unknown_plugin_classes.append(plugin_inst.plugin_type)
 
         template = get_template(options['template'])
         report = template.render({
