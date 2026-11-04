@@ -22,6 +22,11 @@ from cms.utils.placeholder import get_placeholders
 from ...conf import settings
 from ...link_manager_pool import link_manager_pool
 from ...ignored_links import link_manual_ignore_info
+from ...http_check import (
+    LinkCheckHttpContext,
+    collect_prefetch_urls,
+    set_active_http_context,
+)
 
 
 LANGUAGE_CODE = get_language()
@@ -160,83 +165,104 @@ class Command(BaseCommand):
 
 
         self.stdout.write('Will check {} Plugins'.format(link_plugins.count()))
-        count = 0
-        for link_plugin in link_plugins.iterator():
-            count += 1
-            if not (count % 1000):
-                self.stdout.write('  Checked {} plugins...'.format(count))
-            plugin_inst, plugin_class = link_plugin.get_plugin_instance()
-            if plugin_inst:
-                link_manager = self.get_link_manager(plugin_inst.plugin_type, scheme=scheme, netloc=netloc)
-                if link_manager:
-                    link_reports = link_manager.check_link(
-                        plugin_inst,
-                        verify_exists=verify_exists,
-                    )
-                    # Convert to a list if only a single item was returned.
-                    try:
-                        iter(link_reports)
-                    except TypeError:
-                        # Result is not a list
-                        link_reports = [link_reports]
-    
-                    for link_report in link_reports:
-                        count_all_links += 1
-    
-                        if not link_report.valid:
-                            slot = link_plugin.placeholder.slot
-                            slot_name = get_placeholder_conf('name', slot)
-                            if slot_name is None:
-                                slot_name = slot
-                            page = getattr(link_plugin.placeholder, 'page', None)
-                            if page:
-                                try:
-                                    page_url = 'https://{}{}'.format(
-                                        page.node.site.domain,
-                                        page.get_absolute_url(plugin_inst.language),
-                                    )
-                                except NoReverseMatch:
-                                    page_url = ''
-                            else:
-                                infos = self.handle_placeholder_outside_cms(link_plugin)
-                                if infos is None:
-                                    # ignore orphaned placeholders
-                                    continue
-                                page = infos['title']
-                                page_url = infos['url']
-    
-                            bad_link = {
-                                'cls': plugin_inst.plugin_type,
-                                'page': page,
-                                'page_url': page_url,
-                                'pk': plugin_inst.pk,
-                                'slot': slot_name,
-                                'label': link_report.text,
-                                'url': link_report.url,
-                                'instance': plugin_inst,
-                            }
 
-                            ignore_info = link_manual_ignore_info(
-                                link_report.url, scheme, netloc
-                            )
-                            if ignore_info is not None:
-                                if ignore_info["stale"]:
-                                    stale_ignored_links.append(
-                                        dict(
-                                            bad_link,
-                                            ignored_since=ignore_info["since"],
-                                            ignore_comment=ignore_info["comment"],
+        http_ctx = None
+        if verify_exists:
+            http_ctx = LinkCheckHttpContext(scheme, netloc)
+            set_active_http_context(http_ctx)
+            prefetch_urls = collect_prefetch_urls(
+                link_plugins, self.get_link_manager, scheme, netloc
+            )
+            self.stdout.write(
+                "Prefetching {} unique URLs...".format(len(prefetch_urls))
+            )
+            http_ctx.prefetch_urls(
+                self.get_link_manager("LinkPlugin", scheme=scheme, netloc=netloc),
+                prefetch_urls,
+            )
+
+        try:
+            count = 0
+            for link_plugin in link_plugins.iterator():
+                count += 1
+                if not (count % 1000):
+                    self.stdout.write('  Checked {} plugins...'.format(count))
+                plugin_inst, plugin_class = link_plugin.get_plugin_instance()
+                if plugin_inst:
+                    link_manager = self.get_link_manager(plugin_inst.plugin_type, scheme=scheme, netloc=netloc)
+                    if link_manager:
+                        link_reports = link_manager.check_link(
+                            plugin_inst,
+                            verify_exists=verify_exists,
+                        )
+                        # Convert to a list if only a single item was returned.
+                        try:
+                            iter(link_reports)
+                        except TypeError:
+                            # Result is not a list
+                            link_reports = [link_reports]
+
+                        for link_report in link_reports:
+                            count_all_links += 1
+
+                            if not link_report.valid:
+                                slot = link_plugin.placeholder.slot
+                                slot_name = get_placeholder_conf('name', slot)
+                                if slot_name is None:
+                                    slot_name = slot
+                                page = getattr(link_plugin.placeholder, 'page', None)
+                                if page:
+                                    try:
+                                        page_url = 'https://{}{}'.format(
+                                            page.node.site.domain,
+                                            page.get_absolute_url(plugin_inst.language),
                                         )
-                                    )
-                                continue
+                                    except NoReverseMatch:
+                                        page_url = ''
+                                else:
+                                    infos = self.handle_placeholder_outside_cms(link_plugin)
+                                    if infos is None:
+                                        # ignore orphaned placeholders
+                                        continue
+                                    page = infos['title']
+                                    page_url = infos['url']
 
-                            self.stdout.write(
-                                'Broken link "{url}" on "{page_url}" plugin.id:{pk} placeholder:{slot}'.format(**bad_link)
-                            )
-                            bad_links.append(bad_link)
-                else:
-                    if plugin_inst.plugin_type not in unknown_plugin_classes:
-                        unknown_plugin_classes.append(plugin_inst.plugin_type)
+                                bad_link = {
+                                    'cls': plugin_inst.plugin_type,
+                                    'page': page,
+                                    'page_url': page_url,
+                                    'pk': plugin_inst.pk,
+                                    'slot': slot_name,
+                                    'label': link_report.text,
+                                    'url': link_report.url,
+                                    'instance': plugin_inst,
+                                }
+
+                                ignore_info = link_manual_ignore_info(
+                                    link_report.url, scheme, netloc
+                                )
+                                if ignore_info is not None:
+                                    if ignore_info["stale"]:
+                                        stale_ignored_links.append(
+                                            dict(
+                                                bad_link,
+                                                ignored_since=ignore_info["since"],
+                                                ignore_comment=ignore_info["comment"],
+                                            )
+                                        )
+                                    continue
+
+                                self.stdout.write(
+                                    'Broken link "{url}" on "{page_url}" plugin.id:{pk} placeholder:{slot}'.format(**bad_link)
+                                )
+                                bad_links.append(bad_link)
+                    else:
+                        if plugin_inst.plugin_type not in unknown_plugin_classes:
+                            unknown_plugin_classes.append(plugin_inst.plugin_type)
+        finally:
+            if http_ctx is not None:
+                set_active_http_context(None)
+                http_ctx.close()
 
         template = get_template(options['template'])
         report = template.render({

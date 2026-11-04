@@ -56,8 +56,27 @@ class LinkManager(object):
     netloc = attr.ib(default="localhost:8000")
 
     def verify_link_exists(self, url, redirection_count=0):
+        from .http_check import get_active_http_context, host_skips_http_check
+
+        if host_skips_http_check(url):
+            return True
+
+        ctx = get_active_http_context()
+        if ctx is not None:
+            return ctx.verify(self, url, redirection_count)
+
+        return self._verify_link_exists_without_context(url, redirection_count)
+
+    def _verify_link_exists_without_context(self, url, redirection_count=0):
+        """Fallback when check_links has not installed a shared HTTP context."""
         try:
-            response = requests.head(url)
+            response = requests.head(
+                url,
+                timeout=(
+                    local_settings.HTTP_CONNECT_TIMEOUT,
+                    local_settings.HTTP_READ_TIMEOUT,
+                ),
+            )
             if (
                 400 <= response.status_code <= 500
             ):  # Some sites do not handle HEAD requests correctly
@@ -65,35 +84,41 @@ class LinkManager(object):
             elif response.status_code in [301, 302]:
                 redirection_count += 1
                 if redirection_count < local_settings.MAX_REDIRECT:
-                    return self.verify_link_exists(response.next.url, redirection_count)
+                    return self._verify_link_exists_without_context(
+                        response.next.url, redirection_count
+                    )
                 else:
-                    # Links with redirects > MAX_REDIRECT are considered broken
                     return False
             else:
                 return 200 <= response.status_code < 400  # pragma: no cover
-        
+
         except requests.HTTPError:
             try:
-                time.sleep(0.5)  # Some sites prevent request being made too quickly
+                time.sleep(0.25)
                 response = requests.get(
                     url,
                     headers={
-                        # Some site check for a common User Agent
                         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:83.0) Gecko/20100101 Firefox/83.0"
                     },
+                    timeout=(
+                        local_settings.HTTP_CONNECT_TIMEOUT,
+                        local_settings.HTTP_READ_TIMEOUT,
+                    ),
                 )
                 if response.status_code in [301, 302]:
                     redirection_count += 1
                     if redirection_count < local_settings.MAX_REDIRECT:
-                        self.verify_link_exists(response.next.url, redirection_count)
+                        return self._verify_link_exists_without_context(
+                            response.next.url, redirection_count
+                        )
                     else:
-                        # Links with redirects > MAX_REDIRECT are considered broken
                         return False
                 else:
                     return 200 <= response.status_code < 400  # pragma: no cover
             except (
                 requests.HTTPError,
                 requests.ConnectionError,
+                requests.Timeout,
                 requests.TooManyRedirects,
                 UnicodeEncodeError,
                 socket.error,
@@ -101,6 +126,7 @@ class LinkManager(object):
                 return False
         except (
             requests.ConnectionError,
+            requests.Timeout,
             requests.TooManyRedirects,
             UnicodeEncodeError,
             socket.error,
