@@ -78,7 +78,7 @@ class Command(BaseCommand):
         activate(settings.REPORT_LANGUAGE)
         report_language = get_language()
 
-        self.stdout.write("Start link check...")
+        self.stdout.write(_("Start link check..."))
 
         """
         We're only interested in link plugins that are either not on any page or
@@ -99,17 +99,21 @@ class Command(BaseCommand):
             pages = Page.objects.filter(
                 reverse_id=options["only_page_reverse_id"], publisher_is_draft=False
             )
-            self.stdout.write("Check only page: {}".format(pages.first().get_title(report_language)))
+            self.stdout.write(
+                _("Check only page: {}").format(pages.first().get_title(report_language))
+            )
         elif options['only_page_id'] is not None:
             pages = Page.objects.filter(
                 id=options["only_page_id"]
             )
-            self.stdout.write("Check only page: {}".format(pages.first().get_title(report_language)))
+            self.stdout.write(
+                _("Check only page: {}").format(pages.first().get_title(report_language))
+            )
         else:
             pages = Page.objects.all()
 
         if options['only_placeholder_id'] is None:
-            self.stdout.write("Search for placeholders to exclude...")
+            self.stdout.write(_("Search for placeholders to exclude..."))
             # Find ghosts placeholders ie placeholders created
             # by a template that is no longer used by a page
 
@@ -125,7 +129,7 @@ class Command(BaseCommand):
                     template_placeholders = list(map(lambda x:x.slot, get_placeholders(page.get_template())))
                 except TemplateDoesNotExist:
                     self.stdout.write(
-                        '** "{}" has template "{}" which could not be found **'.format(
+                        _('** "{}" has template "{}" which could not be found **').format(
                             page.get_title(),
                             page.template,
                         )
@@ -135,7 +139,9 @@ class Command(BaseCommand):
                 for placeholder in page.placeholders.all():
                     if not placeholder.slot in template_placeholders:
                         excluded_placeholders.append(placeholder)
-            self.stdout.write("Found {} placeholders to exclude".format(len(excluded_placeholders)))
+            self.stdout.write(
+                _("Found {} placeholders to exclude").format(len(excluded_placeholders))
+            )
 
         link_plugins = CMSPlugin.objects.filter(plugin_type__in=link_manager_pool.get_link_plugin_types())
 
@@ -164,7 +170,7 @@ class Command(BaseCommand):
             ).exclude(placeholder__in=excluded_placeholders)
 
 
-        self.stdout.write('Will check {} Plugins'.format(link_plugins.count()))
+        self.stdout.write(_("Will check {} Plugins").format(link_plugins.count()))
 
         http_ctx = None
         if verify_exists:
@@ -174,7 +180,7 @@ class Command(BaseCommand):
                 link_plugins, self.get_link_manager, scheme, netloc
             )
             self.stdout.write(
-                "Prefetching {} unique URLs...".format(len(prefetch_urls))
+                _("Prefetching {} unique URLs...").format(len(prefetch_urls))
             )
             http_ctx.prefetch_urls(
                 self.get_link_manager("LinkPlugin", scheme=scheme, netloc=netloc),
@@ -186,7 +192,7 @@ class Command(BaseCommand):
             for link_plugin in link_plugins.iterator():
                 count += 1
                 if not (count % 1000):
-                    self.stdout.write('  Checked {} plugins...'.format(count))
+                    self.stdout.write(_("  Checked {} plugins...").format(count))
                 plugin_inst, plugin_class = link_plugin.get_plugin_instance()
                 if plugin_inst:
                     link_manager = self.get_link_manager(plugin_inst.plugin_type, scheme=scheme, netloc=netloc)
@@ -253,7 +259,10 @@ class Command(BaseCommand):
                                     continue
 
                                 self.stdout.write(
-                                    'Broken link "{url}" on "{page_url}" plugin.id:{pk} placeholder:{slot}'.format(**bad_link)
+                                    _(
+                                        'Broken link "{url}" on "{page_url}" '
+                                        'plugin.id:{pk} placeholder:{slot}'
+                                    ).format(**bad_link)
                                 )
                                 bad_links.append(bad_link)
                     else:
@@ -281,8 +290,10 @@ class Command(BaseCommand):
                     report,
                     fail_silently=False
                 )
-                self.stdout.write('Successfully sent broken link report via email')
+                self.stdout.write(_("Successfully sent broken link report via email"))
             except Exception as exception:
-                self.stderr.write('ERROR: Report could not be sent via mail: {0}'.format(exception))
+                self.stderr.write(
+                    _("ERROR: Report could not be sent via mail: {0}").format(exception)
+                )
         else:
             self.stdout.write(report)

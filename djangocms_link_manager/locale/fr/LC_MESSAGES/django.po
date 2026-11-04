@@ -30,11 +30,59 @@ msgstr "Lien non valide (pas d’URL)"
 msgid "Link without label"
 msgstr "Lien sans intitulé"
 
+#: management/commands/check_links.py:81
+msgid "Start link check..."
+msgstr "Démarrage de la vérification des liens..."
+
+#: management/commands/check_links.py:102
+#: management/commands/check_links.py:109
+msgid "Check only page: {}"
+msgstr "Vérification de la page uniquement : {}"
+
+#: management/commands/check_links.py:112
+msgid "Search for placeholders to exclude..."
+msgstr "Recherche des placeholders à exclure..."
+
+#: management/commands/check_links.py:128
+msgid "** \"{}\" has template \"{}\" which could not be found **"
+msgstr "** « {} » a le template « {} » introuvable **"
+
+#: management/commands/check_links.py:139
+msgid "Found {} placeholders to exclude"
+msgstr "{} placeholders à exclure trouvés"
+
+#: management/commands/check_links.py:169
+msgid "Will check {} Plugins"
+msgstr "{} plugins seront vérifiés"
+
+#: management/commands/check_links.py:179
+msgid "Prefetching {} unique URLs..."
+msgstr "Préchargement de {} URL uniques..."
+
+#: management/commands/check_links.py:191
+msgid "  Checked {} plugins..."
+msgstr "  {} plugins vérifiés..."
+
+#: management/commands/check_links.py:257
+msgid ""
+"Broken link \"{url}\" on \"{page_url}\" plugin.id:{pk} placeholder:{slot}"
+msgstr ""
+"Lien cassé « {url} » sur « {page_url} » plugin.id:{pk} placeholder:{slot}"
+
+#: management/commands/check_links.py:286
+msgid "Successfully sent broken link report via email"
+msgstr "Rapport de liens cassés envoyé par e-mail"
+
+#: management/commands/check_links.py:289
+#, python-brace-format
+msgid "ERROR: Report could not be sent via mail: {0}"
+msgstr "ERREUR : impossible d'envoyer le rapport par e-mail : {0}"
+
 #: management/commands/check_links.py:76
 msgid "News article: {}"
 msgstr "Article d’actualité : {}"
 
-#: management/commands/check_links.py:231
+#: management/commands/check_links.py:284
 #, python-brace-format
 msgid "Broken link report: {0}"
 msgstr "Rapport de lien cassé : {0}"
