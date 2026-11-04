@@ -4,12 +4,15 @@ from __future__ import unicode_literals
 from django.utils.translation import ugettext as _
 from django.urls import NoReverseMatch
 
-from ..link_manager import LinkManager, LinkReport
+from ..link_manager import LinkManager, LinkReport, hyperlink_should_be_audited
 
 
 class CMSPluginLinkLinkManager(LinkManager):
 
     def check_link(self, instance, verify_exists=False):
+        if instance.mailto or instance.phone or instance.anchor:
+            return []
+
         valid = False
 
         if instance.internal_link is not None:
@@ -22,23 +25,13 @@ class CMSPluginLinkLinkManager(LinkManager):
 
         elif instance.external_link != '':
             url = instance.external_link
+            if not hyperlink_should_be_audited(url):
+                return []
             valid = self.validate_url(url, verify_exists=verify_exists)
-
-        elif instance.mailto != '':
-            url = instance.mailto
-            valid = self.validate_mailto(url, verify_exists=verify_exists)
-
-        elif instance.phone != '':
-            url = instance.phone
-            valid = self.validate_tel(url, verify_exists=verify_exists)
 
         elif instance.file_link is not None:
             url = instance.file_link.url
             valid = self.validate_url(url, verify_exists=verify_exists)
-        
-        elif instance.anchor is not None:
-            url = "#" + instance.anchor
-            valid = True
 
         elif instance.get_children().count() > 0:
             url = _('Invalid link (no URL) but with children plugins')

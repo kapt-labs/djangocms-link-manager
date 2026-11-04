@@ -4,22 +4,22 @@ from __future__ import unicode_literals
 
 from django.urls import NoReverseMatch
 
-from ..link_manager import LinkManager, LinkReport
+from ..link_manager import LinkManager, LinkReport, hyperlink_should_be_audited
 
 
 class Bootstrap3ButtonCMSPluginLinkManager(LinkManager):
 
     def check_link(self, instance, verify_exists=False):
-        valid = False
+        if instance.link_phone or instance.link_mailto:
+            return []
 
-        if instance.link_phone:
-            url = instance.link_phone
-            valid = True  # TODO
-        elif instance.link_mailto:
-            url = instance.link_mailto
-            valid = True  # TODO
-        elif instance.link_url:
+        valid = False
+        url = None
+
+        if instance.link_url:
             url = instance.link_url
+            if not hyperlink_should_be_audited(url):
+                return []
             valid = self.validate_url(url, verify_exists=verify_exists)
         elif instance.link_page:
             try:
@@ -32,10 +32,10 @@ class Bootstrap3ButtonCMSPluginLinkManager(LinkManager):
 
         elif instance.link_file:
             url = instance.link_file.url
-            valid = self.validate_url(url, verify_exists=verify_exists),
+            valid = self.validate_url(url, verify_exists=verify_exists)
 
         else:
-            url = None
+            return []
 
         return LinkReport(
             valid=valid,

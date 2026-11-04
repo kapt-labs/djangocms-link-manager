@@ -12,12 +12,7 @@ import warnings
 from collections import OrderedDict
 from hashlib import sha256
 
-try:  # pragma: no cover
-    # Python 3.x
-    from urllib.parse import urlparse, urlunparse
-except ImportError:  # pragma: no cover
-    # Python 2.x
-    from urlparse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -26,6 +21,22 @@ from django.core.validators import URLValidator
 
 import attr
 from .conf import settings as local_settings
+
+
+def hyperlink_should_be_audited(url):
+    """HTTP broken-link checks apply to paths and http(s) URLs only."""
+    url = (url or "").strip()
+    if not url or url.startswith("#"):
+        return False
+    lower = url.lower()
+    if lower.startswith("javascript:"):
+        return False
+    if lower.startswith("//"):
+        return True
+    parts = urlparse(url)
+    if not parts.scheme:
+        return True
+    return parts.scheme in ("http", "https")
 
 
 @attr.s(slots=True)
