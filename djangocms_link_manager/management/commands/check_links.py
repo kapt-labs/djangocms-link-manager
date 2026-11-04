@@ -21,6 +21,7 @@ from cms.utils.placeholder import get_placeholders
 
 from ...conf import settings
 from ...link_manager_pool import link_manager_pool
+from ...ignored_links import link_manual_ignore_info
 
 
 LANGUAGE_CODE = get_language()
@@ -85,6 +86,7 @@ class Command(BaseCommand):
         netloc = options['netloc']
 
         bad_links = []
+        stale_ignored_links = []
         unknown_plugin_classes = []
         count_all_links = 0
 
@@ -213,6 +215,21 @@ class Command(BaseCommand):
                                 'url': link_report.url,
                                 'instance': plugin_inst,
                             }
+
+                            ignore_info = link_manual_ignore_info(
+                                link_report.url, scheme, netloc
+                            )
+                            if ignore_info is not None:
+                                if ignore_info["stale"]:
+                                    stale_ignored_links.append(
+                                        dict(
+                                            bad_link,
+                                            ignored_since=ignore_info["since"],
+                                            ignore_comment=ignore_info["comment"],
+                                        )
+                                    )
+                                continue
+
                             self.stdout.write(
                                 'Broken link "{url}" on "{page_url}" plugin.id:{pk} placeholder:{slot}'.format(**bad_link)
                             )
@@ -224,6 +241,7 @@ class Command(BaseCommand):
         template = get_template(options['template'])
         report = template.render({
             'bad_links': bad_links,
+            'stale_ignored_links': stale_ignored_links,
             'count_all_links': count_all_links,
             'options': options,
             'timestamp': now(),

@@ -2,7 +2,7 @@
 
 {% autoescape off %}
 ===========================================================
-{% trans "Broken Link Report" %} coucou
+{% trans "Broken Link Report" %}
 ===========================================================
 
 {% blocktrans with timestamp=timestamp %}Report generated {{timestamp}}{% endblocktrans %}
@@ -20,6 +20,17 @@ verify-exists: {% if options.verify_exists %}enabled {% else %}{% trans "disable
 {% empty %}
     {% trans "No bad links found." %}
 {% endfor %}
+
+{% if stale_ignored_links %}
+-----------------------------------------------------------
+{% trans "Manually ignored links to review" %}
+-----------------------------------------------------------
+
+{% trans "These links are excluded from broken-link results but have been ignored for more than one year; check they are still valid." %}
+{% for link in stale_ignored_links %}
+    - {{ link.cls }} ({{ link.pk }}) in placeholder "{{ link.slot }}" {% if link.page %}on page "{{ link.page }}"{% if link.page_url %} ({{ link.page_url }}){% endif %}{% endif %} labeled: "{{ link.label }}" <{{ link.url }}>{% blocktrans with ignored_since=link.ignored_since|date:"SHORT_DATE_FORMAT" %} — ignored since {{ ignored_since }}{% endblocktrans %}
+{% endfor %}
+{% endif %}
 
 {% if unknown_plugin_classes %}
 -----------------------------------------------------------
