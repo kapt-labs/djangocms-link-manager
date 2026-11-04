@@ -8,8 +8,7 @@ from django.template.loader import get_template
 from functools import lru_cache
 from django.utils.timezone import now
 from django.utils.translation import ugettext as _
-from django.utils.translation import get_language
-from django.utils.translation import activate
+from django.utils.translation import activate, get_language
 from django.urls import reverse
 
 from django.core.mail import mail_managers
@@ -28,8 +27,6 @@ from ...http_check import (
     set_active_http_context,
 )
 
-
-LANGUAGE_CODE = get_language()
 
 class Command(BaseCommand):
     help = """Generate link report."""
@@ -78,6 +75,9 @@ class Command(BaseCommand):
         return settings.PLACEHOLDER_OUTSIDE_CMS_HANDLER(plugin)
 
     def handle(self, *args, **options):
+        activate(settings.REPORT_LANGUAGE)
+        report_language = get_language()
+
         self.stdout.write("Start link check...")
 
         """
@@ -99,12 +99,12 @@ class Command(BaseCommand):
             pages = Page.objects.filter(
                 reverse_id=options["only_page_reverse_id"], publisher_is_draft=False
             )
-            self.stdout.write("Check only page: {}".format(pages.first().get_title(LANGUAGE_CODE)))
+            self.stdout.write("Check only page: {}".format(pages.first().get_title(report_language)))
         elif options['only_page_id'] is not None:
             pages = Page.objects.filter(
                 id=options["only_page_id"]
             )
-            self.stdout.write("Check only page: {}".format(pages.first().get_title(LANGUAGE_CODE)))
+            self.stdout.write("Check only page: {}".format(pages.first().get_title(report_language)))
         else:
             pages = Page.objects.all()
 

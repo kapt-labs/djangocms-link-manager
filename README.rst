@@ -2,9 +2,6 @@
 django CMS Link Manager
 =======================
 
-.. image:: https://travis-ci.org/divio/djangocms-link-manager.svg?branch=master
-    :target: https://travis-ci.org/divio/djangocms-link-manager
-
 An extensible means of checking for broken links in virtually any
 django CMS plugin.
 
@@ -21,7 +18,7 @@ This project attempts to provide a solution in an extensible manner.
 Installation
 ------------
 
-This package requires Python 2.7 or later and Django 1.8 or later.
+This package requires Python 3 and Django compatible with your django CMS version.
 
 First, install the package from PyPI: ::
 
@@ -35,6 +32,10 @@ Then add it to your ``INSTALLED_APPS``: ::
         ...
         'djangocms_link_manager',
     ]
+
+Run migrations after upgrading (ignored-link admin storage): ::
+
+    python manage.py migrate djangocms_link_manager
 
 -----
 Usage
@@ -62,6 +63,58 @@ However, this command accepts a number of optional arguments: ::
                         Check only the page with a given id
     --only-placeholder-id ONLY_PLACEHOLDER_ID
                         Check only the placeholder with a given id
+
+With ``--verify-exists``, the command prefetches unique http(s) URLs grouped by
+host (shared ``requests`` session and per-run result cache). Redirects are
+followed up to ``LINK_MANAGER_MAX_REDIRECT`` (default: 3).
+
+Ignored URLs (admin)
+--------------------
+
+Known false positives can be stored in **Ignored links (link check)** in the
+Django admin (model ``LinkCheckIgnoredLink``). Matching URLs are omitted from
+the broken-link list. Entries older than ``LINK_MANAGER_IGNORE_STALE_DAYS``
+(default: 365) still appear in a separate **Manually ignored links to review**
+section so they can be checked again.
+
+Use an absolute URL starting with ``http://`` or ``https://`` (same target as in
+the content). URLs are normalized on save for matching during the report; relative
+href in the CMS are still resolved at check time using the check host and scheme.
+
+Configuration
+-------------
+
+Optional settings in the project ``settings.py``:
+
+``LINK_MANAGER_REPORT_LANGUAGE``
+    Language code for report strings (``{% trans %}`` in the text template).
+    Defaults to the project ``LANGUAGE_CODE``.
+
+``LINK_MANAGER_STATIC_EXCLUDED_DOMAINS``
+    Hostnames (or subdomains) for which ``--verify-exists`` skips HTTP checks
+    (useful when bots are blocked). Example: ``("domain-that-blocks-bots.ext", "another-domain.ext",)``.
+
+``LINK_MANAGER_IGNORE_STALE_DAYS``
+    Days after which an admin ignore is listed in the stale review section
+    (default: 365).
+
+``LINK_MANAGER_HTTP_CONNECT_TIMEOUT`` / ``LINK_MANAGER_HTTP_READ_TIMEOUT``
+    Timeouts in seconds for remote checks when ``--verify-exists`` is enabled
+    (defaults: 5 and 10).
+
+``LINK_MANAGER_MAX_REDIRECT``
+    Maximum redirects followed during existence checks (default: 3).
+
+``LINK_MANAGER_PLACEHOLDER_OUTSIDE_CMS_HANDLER``
+    Callable returning page title and URL for plugins outside CMS pages (see
+    existing projects using placeholder fields).
+
+Built-in link managers
+----------------------
+
+``LinkPlugin`` and ``Bootstrap3ButtonCMSPlugin`` skip ``mailto``, ``tel`` and
+in-page anchors in the report and only run existence checks on http(s) and
+site-relative paths for external URLs.
 
 
 ---------

@@ -13,28 +13,31 @@ def clear_ignored_links_cache():
     cache.delete(CACHE_KEY)
 
 
-def normalize_url_for_ignore(url, scheme=None, netloc=None):
-    """Canonical URL key for matching admin ignore rows to report hrefs."""
+def normalize_url_for_ignore(url, scheme=None, netloc=None, absolute_http_only=False):
+    """
+    Canonical URL key for matching ignore rows to report hrefs.
+    Admin rows must be absolute http(s) URLs (absolute_http_only=True).
+    During check_links, relative hrefs are resolved with the command scheme and host.
+    """
     url = (url or "").strip()
     if not url:
         return None
 
-    scheme = (scheme or local_settings.IGNORE_URL_DEFAULT_SCHEME).lower()
-    netloc = netloc or ""
-
-    if url.startswith("//"):
-        parts = urlparse(f"{scheme}:{url}")
-    elif not urlparse(url).scheme:
-        if url.startswith("/"):
-            if not netloc:
-                return None
-            parts = urlparse(f"{scheme}://{netloc}{url}")
-        else:
-            parts = urlparse(f"{scheme}://{url}")
+    parts = urlparse(url)
+    if parts.scheme in ("http", "https"):
+        pass
+    elif absolute_http_only:
+        return None
+    elif not scheme or not netloc:
+        return None
+    elif url.startswith("//"):
+        parts = urlparse(f"{scheme.lower()}:{url}")
+    elif url.startswith("/"):
+        parts = urlparse(f"{scheme.lower()}://{netloc}{url}")
     else:
-        parts = urlparse(url)
+        return None
 
-    if not parts.netloc:
+    if parts.scheme not in ("http", "https") or not parts.netloc:
         return None
 
     path = parts.path or "/"

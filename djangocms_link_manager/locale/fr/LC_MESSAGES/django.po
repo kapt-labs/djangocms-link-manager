@@ -86,6 +86,10 @@ msgid "Report generated %(timestamp)s"
 msgstr "Rapport généré le %(timestamp)s"
 
 #: templates/djangocms_link_manager/text_only.html:9
+msgid "enabled"
+msgstr "activé"
+
+#: templates/djangocms_link_manager/text_only.html:9
 msgid "disabled"
 msgstr "désactivé"
 
@@ -123,6 +127,18 @@ msgstr "Les types de plugin suivants n’ont pas de gestionnaire de liens."
 #: templates/djangocms_link_manager/text_only.html:34
 msgid "End of report"
 msgstr "Fin de rapport"
+
+#: templates/djangocms_link_manager/text_only.html:26
+msgid "Manually ignored links to review"
+msgstr "Liens ignorés manuellement à revoir"
+
+#: templates/djangocms_link_manager/text_only.html:29
+msgid "These links are excluded from broken-link results but have been ignored for more than one year; check they are still valid."
+msgstr "Ces liens sont exclus des résultats mais ignorés depuis plus d’un an ; vérifiez qu’ils sont toujours valides."
+
+#: templates/djangocms_link_manager/text_only.html:31
+msgid " — ignored since %(ignored_since)s"
+msgstr " — ignoré depuis le %(ignored_since)s"
 
 #: urls.py:16
 msgid "^analyze/$"

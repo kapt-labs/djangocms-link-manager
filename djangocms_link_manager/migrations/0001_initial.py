@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 (
                     "url",
                     models.CharField(
-                        help_text="Full or site-relative href as it appears in the content.",
+                        help_text="Absolute URL starting with http:// or https://.",
                         max_length=2048,
                         verbose_name="URL",
                     ),

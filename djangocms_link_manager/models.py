@@ -1,9 +1,7 @@
-from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .conf import settings as local_settings
 from .ignored_links import clear_ignored_links_cache, normalize_url_for_ignore
 
 
@@ -13,7 +11,7 @@ class LinkCheckIgnoredLink(models.Model):
     url = models.CharField(
         verbose_name=_("URL"),
         max_length=2048,
-        help_text=_("Full or site-relative href as it appears in the content."),
+        help_text=_("Absolute URL starting with http:// or https://."),
     )
     normalized_url = models.CharField(max_length=2048, editable=False, unique=True)
     comment = models.CharField(
@@ -32,14 +30,11 @@ class LinkCheckIgnoredLink(models.Model):
         return self.url
 
     def save(self, *args, **kwargs):
-        site_domain = Site.objects.get_current().domain
-        normalized = normalize_url_for_ignore(
-            self.url,
-            scheme=local_settings.IGNORE_URL_DEFAULT_SCHEME,
-            netloc=site_domain,
-        )
+        normalized = normalize_url_for_ignore(self.url, absolute_http_only=True)
         if normalized is None:
-            raise ValidationError({"url": _("Enter a valid URL.")})
+            raise ValidationError(
+                {"url": _("Enter an absolute URL starting with http:// or https://.")}
+            )
         self.normalized_url = normalized
         super().save(*args, **kwargs)
         clear_ignored_links_cache()

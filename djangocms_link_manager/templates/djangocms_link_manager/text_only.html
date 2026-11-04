@@ -6,7 +6,7 @@
 ===========================================================
 
 {% blocktrans with timestamp=timestamp %}Report generated {{timestamp}}{% endblocktrans %}
-verify-exists: {% if options.verify_exists %}enabled {% else %}{% trans "disabled" %}{% endif %}
+verify-exists: {% if options.verify_exists %}{% trans "enabled" %} {% else %}{% trans "disabled" %}{% endif %}
 {% blocktrans with scheme=options.scheme %}Default scheme: {{ scheme }}{% endblocktrans %}
 {% blocktrans with netloc=options.netloc %}Default host/port: {{ netloc }}{% endblocktrans %}
 
